@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monster Roll - Menú Interactivo</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Roboto',sans-serif;background:linear-gradient(120deg,#fff3f0,#ffe6e0);color:#333;}
+header{background:#ff4d4d;color:#fff;text-align:center;padding:1.5rem 1rem;font-size:1.7rem;font-weight:700;box-shadow:0 4px 6px rgba(0,0,0,0.1);position:sticky;top:0;z-index:10;}
+.section-title{padding:15px 20px;font-size:1.3rem;color:#ff4d4d;font-weight:700;margin-top:15px;}
+.carousel{display:flex;overflow-x:auto;gap:18px;padding:10px 20px 30px;scroll-behavior:smooth;}
+.carousel::-webkit-scrollbar{height:8px;}
+.carousel::-webkit-scrollbar-thumb{background:rgba(255,77,77,0.6);border-radius:4px;}
+.carousel::-webkit-scrollbar-track{background:transparent;}
+.item{min-width:200px;background:#fff;border-radius:16px;box-shadow:0 6px 15px rgba(0,0,0,0.1);overflow:hidden;display:flex;flex-direction:column;transition:transform 0.3s ease,box-shadow 0.3s ease,opacity 0.5s ease;opacity:0;position:relative;cursor:pointer;}
+.item.visible{opacity:1;transform:translateY(0);}
+.item img{width:100%;height:160px;object-fit:cover;transition:transform 0.3s ease;}
+.item:hover img,.item.touch-active img{transform:scale(1.05);}
+.item-content{padding:14px;display:flex;flex-direction:column;justify-content:space-between;flex-grow:1;}
+.item-content h3{color:#ff4d4d;font-size:1.2rem;margin-bottom:6px;}
+.item-content p{font-size:0.95rem;color:#555;flex-grow:1;margin-bottom:10px;}
+#cart-section{padding:20px;}
+#cart-items{margin-bottom:15px;}
+#cart-items div{margin-bottom:6px;}
+#cart-total{font-weight:700;margin-top:5px;}
+#customer-address{width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;margin-bottom:10px;font-size:0.95rem;}
+#btn-send-cart{width:100%;padding:12px;background:linear-gradient(90deg,#25d366,#1ebe5d);color:#fff;border:none;border-radius:12px;font-weight:700;font-size:1rem;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;}
+#btn-send-cart:hover{transform:scale(1.03);box-shadow:0 6px 12px rgba(0,0,0,0.2);}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:center;z-index:100;}
+.modal.active{display:flex;}
+.modal-content{background:#fff;padding:20px;border-radius:16px;width:90%;max-width:350px;position:relative;animation:fadeIn 0.3s;}
+.modal-content img{width:100%;height:180px;object-fit:cover;border-radius:12px;margin-bottom:12px;}
+.modal-content h3{color:#ff4d4d;margin-bottom:8px;}
+.modal-content p{font-size:0.9rem;color:#555;margin-bottom:12px;}
+.modal-content label{font-size:0.9rem;margin-bottom:6px;display:block;}
+.modal-content input[type=number]{width:60px;padding:6px;border-radius:8px;border:1px solid #ccc;}
+.modal-content button{margin-top:10px;padding:10px 14px;background:linear-gradient(90deg,#ff7f50,#ff4d4d);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;}
+.modal-content button:hover{transform:scale(1.05);}
+.modal-close{position:absolute;top:10px;right:12px;font-size:1.2rem;font-weight:bold;color:#ff4d4d;cursor:pointer;}
+@keyframes fadeIn{from{opacity:0;transform:scale(0.95);}to{opacity:1;transform:scale(1);}}
+footer{text-align:center;padding:1.5rem;background-color:#ff4d4d;color:#fff;font-weight:500;box-shadow:0 -4px 6px rgba(0,0,0,0.1);margin-top:20px;}
+@media(min-width:768px){.carousel{justify-content:center;overflow-x:visible;flex-wrap:wrap;}.item{min-width:220px;margin-bottom:20px;}}
+</style>
+</head>
+<body>
+
+<header>Monster Roll Sushi & Wings</header>
+
+<div class="section-title">Rolls</div>
+<div class="carousel" id="rolls-carousel"></div>
+
+<div class="section-title">Arroces</div>
+<div class="carousel" id="arroz-carousel"></div>
+
+<div id="cart-section">
+    <h3>Tu Pedido:</h3>
+    <div id="cart-items">Nada agregado aún.</div>
+    <div id="cart-total">Total: $0.00</div>
+    <input type="text" id="customer-address" placeholder="Escribe tu dirección aquí">
+    <button id="btn-send-cart">Enviar pedido por WhatsApp</button>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="item-modal">
+    <div class="modal-content">
+        <span class="modal-close" id="modal-close">&times;</span>
+        <img src="" id="modal-img" alt="">
+        <h3 id="modal-title"></h3>
+        <p id="modal-desc"></p>
+        <p>Precio: $<span id="modal-price">0.00</span></p>
+        <label for="modal-quantity">Cantidad:</label>
+        <input type="number" id="modal-quantity" min="1" value="1">
+        <button id="modal-add">Agregar al carrito</button>
+    </div>
+</div>
+
+<footer>Contacto: WhatsApp +52 669 239 1558</footer>
+
+<script>
+// Items con precios y rutas según tus imágenes
+const rolls = [
+    {name:"Avocado Roll", desc:"Rollo de aguacate fresco con arroz y alga.", img:"img/avocado.jpg", price:75},
+    {name:"Mar y Tierra", desc:"Rollo mixto de camarón y carne.", img:"img/mar y tierra.png", price:75},
+    {name:"3 Quesos", desc:"Rollo relleno de tres tipos de queso fundido.", img:"img/3 quesos.png", price:80},
+    {name:"Sushi Horneado", desc:"Sushi especial horneado con salsa cremosa.", img:"img/sushihorneado.jpg", price:85}
+];
+
+const arroces = [
+    {name:"Yakimeshi", desc:"Arroz frito estilo japonés con verduras y camarón y carne.", img:"img/yakimeshi.png", price:75}
+];
+
+// Carrito
+let cart=[];
+
+// Render items
+function renderItems(items, containerId){
+    const container=document.getElementById(containerId);
+    items.forEach((item,index)=>{
+        const div=document.createElement('div');
+        div.className='item';
+        div.innerHTML=`
+            <img src="${item.img}" alt="${item.name}">
+            <div class="item-content">
+                <h3>${item.name}</h3>
+                <p>${item.desc}</p>
+            </div>
+        `;
+        container.appendChild(div);
+        setTimeout(()=>{ div.classList.add('visible'); }, index*150);
+        div.addEventListener('click',()=>openModal(item));
+    });
+}
+
+renderItems(rolls,'rolls-carousel');
+renderItems(arroces,'arroz-carousel');
+
+// Modal
+const modal=document.getElementById('item-modal');
+const modalImg=document.getElementById('modal-img');
+const modalTitle=document.getElementById('modal-title');
+const modalDesc=document.getElementById('modal-desc');
+const modalPrice=document.getElementById('modal-price');
+const modalQuantity=document.getElementById('modal-quantity');
+const modalAdd=document.getElementById('modal-add');
+const modalClose=document.getElementById('modal-close');
+let currentItem=null;
+
+function openModal(item){
+    currentItem=item;
+    modalImg.src=item.img;
+    modalTitle.textContent=item.name;
+    modalDesc.textContent=item.desc;
+    modalPrice.textContent=item.price.toFixed(2);
+    modalQuantity.value=1;
+    modal.classList.add('active');
+}
+
+modalClose.addEventListener('click',()=>{modal.classList.remove('active');});
+modalAdd.addEventListener('click',()=>{
+    const qty=parseInt(modalQuantity.value);
+    if(qty>0){
+        for(let i=0;i<qty;i++){cart.push({name:currentItem.name, price:currentItem.price});}
+        updateCart();
+        modal.classList.remove('active');
+    }
+});
+
+function updateCart(){
+    const cartDiv=document.getElementById('cart-items');
+    const totalDiv=document.getElementById('cart-total');
+    if(cart.length===0){ cartDiv.textContent='Nada agregado aún.'; totalDiv.textContent='Total: $0.00'; return;}
+    const counts={};
+    cart.forEach(item=>{ counts[item.name] = counts[item.name] || {qty:0, price:item.price}; counts[item.name].qty +=1; });
+    cartDiv.innerHTML='';
+    let total=0;
+    Object.keys(counts).forEach((key,i)=>{
+        const div=document.createElement('div');
+        const subTotal=counts[key].qty*counts[key].price;
+        total+=subTotal;
+        div.textContent=`${i+1}. ${key} x${counts[key].qty} - $${subTotal.toFixed(2)}`;
+        cartDiv.appendChild(div);
+    });
+    totalDiv.textContent=`Total: $${total.toFixed(2)}`;
+}
+
+// Enviar WhatsApp
+document.getElementById('btn-send-cart').addEventListener('click', ()=>{
+    const address=document.getElementById('customer-address').value.trim();
+    if(cart.length===0){ alert('Agrega al menos un item al carrito'); return;}
+    if(address===''){ alert('Por favor escribe tu dirección'); return;}
+
+    const counts={};
+    let total=0;
+    cart.forEach(item=>{
+        if(!counts[item.name]) counts[item.name]={qty:0, price:item.price};
+        counts[item.name].qty+=1;
+    });
+    Object.keys(counts).forEach(key=>{ total+=counts[key].qty*counts[key].price; });
+
+    const message=`Hola, quiero pedir:\n${Object.keys(counts).map((k,i)=>`${i+1}. ${k} x${counts[k].qty} - $${(counts[k].qty*counts[k].price).toFixed(2)}`).join('\n')}\nDirección: ${address}\nTotal: $${total.toFixed(2)}`;
+    const waUrl=`https://wa.me/526692391558?text=${encodeURIComponent(message)}`;
+    window.open(waUrl,'_blank');
+});
+</script>
+
+</body>
+</html>
